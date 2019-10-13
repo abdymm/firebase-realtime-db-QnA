@@ -166,23 +166,46 @@
         var database = firebase.database();
         var questionsRef = database.ref('questions').orderByChild('ts');
         questionsRef.on('value', function(snapshot) {
-          console.log(snapshot.val());
           $('#question-list').html("");
           let questions = [];
           snapshot.forEach(function(childSnapshot) {
             var questionObj = childSnapshot.val();
+            questionObj.key = childSnapshot.key;
             questions.push(questionObj);
           });
           questions =  questions.reverse();
+          console.log(questions);
           questions.forEach(question => {
             $('#question-list').append("<li>"+
                 "<h5>"+question.name+" ("+question.institution+")</h5>"+
                 "<em>"+question.question+"</em>"+
                 "<h6><small>Timestamp: "+question.ts+"</small></h6>"+
+                "<button class='question-delete btn btn-danger btn-sm' key='"+question.key+"'>Delete</button>"+
+                "<button class='question-update btn btn-primary btn-sm' key='"+question.key+"'>Update</button>"+
                 "</li>")
             
           });
         });
+
+        $('body').on('click', '.question-delete', function(){
+          const key = $(this).attr('key');
+          let questionRef = database.ref('questions/' + key);
+          questionRef.remove()
+        });
+        $('body').on('click', '.question-update', function(){
+          const key = $(this).attr('key');
+          let questionRef = database.ref('questions/' + key);
+          let dataUpdate = {
+            userId: 1,
+            name: "UpdatedName",
+            institution: "UpdatedInstitution",
+            question: "UpdatedQuestion",
+            ts: Math.round(new Date().getTime() / 1000)
+          }
+
+          updateQuestion(questionRef, dataUpdate);
+        });
+
 
         document
           .querySelector("#post-question")
@@ -197,6 +220,17 @@
             $('#institution').val("");
             $('#question').val("");
           });
+
+        function updateQuestion(questionRef, data) {
+          questionRef.update(data, function(error){
+            if (error) {
+              console.log(error);
+              alert('something gone wrong')
+            } else {
+              // Data saved successfully!
+            }
+          });
+        }
 
         function postQuestion(userId, name, institution, question) {
           var ts = Math.round(new Date().getTime() / 1000);
