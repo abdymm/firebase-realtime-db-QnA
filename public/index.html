@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Welcome to Firebase Hosting</title>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <!-- update the version number as needed -->
+    <script defer src="/__/firebase/7.2.0/firebase-app.js"></script>
+    <!-- include only the Firebase features as you need -->
+    <script defer src="/__/firebase/7.2.0/firebase-auth.js"></script>
+    <script defer src="/__/firebase/7.2.0/firebase-database.js"></script>
+    <script defer src="/__/firebase/7.2.0/firebase-messaging.js"></script>
+    <script defer src="/__/firebase/7.2.0/firebase-storage.js"></script>
+    <!-- initialize the SDK after all desired features are loaded -->
+    <script defer src="/__/firebase/init.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <style media="screen">
+      body {
+        background: #eceff1;
+        color: rgba(0, 0, 0, 0.87);
+        font-family: Roboto, Helvetica, Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      .row {
+        padding: 50px;
+      }
+      .box {
+        display: none;
+      }
+      .input {
+        width: 100%;
+        margin-bottom: 5px;
+      }
+      #question {
+        width: 100%;
+        height: 5rem;
+      }
+      #title {
+        margin: 0 auto;
+      }
+      .message {
+        background: white;
+        margin: 30px auto;
+        padding: 32px 24px;
+        border-radius: 3px;
+      }
+      .message h2 {
+        color: #ffa100;
+        font-weight: bold;
+        font-size: 16px;
+        margin: 0 0 8px;
+      }
+      .message h1 {
+        font-size: 22px;
+        font-weight: 300;
+        color: rgba(0, 0, 0, 0.6);
+        margin: 0 0 16px;
+      }
+      .message p {
+        line-height: 140%;
+        margin: 16px 0 24px;
+        font-size: 14px;
+      }
+      .message a {
+        display: block;
+        text-align: center;
+        background: #039be5;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: white;
+        padding: 16px;
+        border-radius: 4px;
+      }
+      .message,
+      .message a {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+      }
+      #load {
+        color: rgba(0, 0, 0, 0.4);
+        text-align: center;
+        font-size: 13px;
+      }
+      ul {
+        list-style: none;
+        margin: 0px;
+        padding: 0px;
+      }
+      ul li {
+        border-bottom: 1px solid silver;
+        padding-bottom: 10px;;
+      }
+      ul li h6{ 
+        margin: 0px;
+        padding: 0px;
+      }
+      @media (max-width: 600px) {
+        body,
+        .message {
+          margin-top: 0;
+          background: white;
+          box-shadow: none;
+        }
+        body {
+          border-top: 16px solid #ffa100;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <h1 id="title">Firebase Realtime DB QnA</h1>
+        <div id="box-ask" class="box message col-md-12">
+          <h2>QnA Apps</h2>
+          <h1>Ask the panelist</h1>
+          <input type="text" class="input" id="name" placeholder="Whats your name"></input>
+          <input type="text" class="input" id="institution" placeholder="Your institution from"></input>
+          <textarea class="input" id="question" placeholder="Ask him/her"></textarea>
+          <a href="#" id="post-question">🔥Fire Question</a>
+        </div>
+        <div id="box-questions" class="box message col-md-12">
+          <h2>Question</h2>
+          <h1>List of question</h1>
+          <ul id="question-list">
+            <p>memuat data...</p>
+          </ul>
+        </div>
+      </div>
+      <p id="load">Firebase SDK Loading&hellip;</p>
+    
+
+
+    <script>
+      
+
+      document.addEventListener("DOMContentLoaded", function() {
+        const path = window.location.pathname;
+        if(path=="/ask") {
+          $('#box-ask').show();
+        } else {
+          $('#box-questions').show();
+        }
+        
+      
+        try {
+          let app = firebase.app();
+          let features = ["auth", "database", "messaging", "storage"].filter(
+            feature => typeof app[feature] === "function"
+          );
+          document.getElementById(
+            "load"
+          ).innerHTML = `Firebase SDK loaded with ${features.join(", ")}`;
+        } catch (e) {
+          console.error(e);
+          document.getElementById("load").innerHTML =
+            "Error loading the Firebase SDK, check the console.";
+        }
+
+        // Get a reference to the database service
+        var database = firebase.database();
+        var questionsRef = database.ref('questions').orderByChild('ts');
+        questionsRef.on('value', function(snapshot) {
+          console.log(snapshot.val());
+          $('#question-list').html("");
+          let questions = [];
+          snapshot.forEach(function(childSnapshot) {
+            var questionObj = childSnapshot.val();
+            questions.push(questionObj);
+          });
+          questions =  questions.reverse();
+          questions.forEach(question => {
+            $('#question-list').append("<li>"+
+                "<h5>"+question.name+" ("+question.institution+")</h5>"+
+                "<em>"+question.question+"</em>"+
+                "<h6><small>Timestamp: "+question.ts+"</small></h6>"+
+                "</li>")
+            
+          });
+        });
+
+        document
+          .querySelector("#post-question")
+          .addEventListener("click", () => {
+            let name = $('#name').val();
+            let institution = $('#institution').val();
+            let question = $('#question').val();
+            
+            postQuestion(1, name, institution, question);
+
+            $('#name').val("");
+            $('#institution').val("");
+            $('#question').val("");
+          });
+
+        function postQuestion(userId, name, institution, question) {
+          var ts = Math.round(new Date().getTime() / 1000);
+          
+          var newId = firebase
+            .database()
+            .ref()
+            .child("questions")
+            .push().key;
+          console.log(newId);
+
+          database.ref("questions/" + newId).set({
+            userId: userId,
+            name: name,
+            institution: institution,
+            question: question,
+            ts: ts
+          }, function(error) {
+            if (error) {
+              console.log(error);
+              alert('something gone wrong')
+            } else {
+              // Data saved successfully!
+              
+            }
+          });
+          return false;
+        }
+      });
+    </script>
+  </body>
+</html>
